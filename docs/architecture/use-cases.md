@@ -9,26 +9,26 @@ Interfaces are marked `«interface»`.
 HTTP POST /api/users  {"email": "...", "displayName": "..."}
     │                                         Spring MVC + Jackson   [framework]
     ▼
-UserAccountController.register(RegisterUserHttpRequest)      [adapter.in.web]
+UserAccountController.register(RegisterUserHttpRequest)      [user.adapter.in.web]
     │  translates HTTP body → RegisterUserCommand (raw strings, no validation)
     ▼
-RegisterUserUseCase «interface»                              [application.port.in]
+RegisterUserUseCase «interface»                              [user.application.port.in]
     │  register(RegisterUserCommand) : UserAccountView
     ▼
-RegisterUserInteractor                                       [application.usecase]
+RegisterUserInteractor                                       [user.application.usecase]
     │
-    ├─creates──▶ EmailAddress                               [domain.user]
+    ├─creates──▶ EmailAddress                               [user.domain]
     │              └─ normalises + validates → DomainValidationException
     │
-    ├─asks────▶ UserAccountRepository «interface»           [application.port.out]
+    ├─asks────▶ UserAccountRepository «interface»           [user.application.port.out]
     │              existsByEmail(EmailAddress)
     │                  │  implemented by
     │                  ▼
-    │              UserAccountPersistenceAdapter             [adapter.out.persistence]
+    │              UserAccountPersistenceAdapter             [user.adapter.out.persistence]
     │                  └─▶ SpringDataUserAccountRepository ─▶ PostgreSQL
     │              true ⇒ EmailAlreadyRegisteredException
     │
-    ├─creates──▶ UserAccount.register(email, name, clock.instant())   [domain.user]
+    ├─creates──▶ UserAccount.register(email, name, clock.instant())   [user.domain]
     │              └─ validates display name; generates UserId
     │
     ├─saves───▶ UserAccountRepository.save(UserAccount) «interface»
@@ -38,17 +38,17 @@ RegisterUserInteractor                                       [application.usecas
     │                  └─ saveAndFlush; uk_user_account_email violation
     │                     ⇒ EmailAlreadyRegisteredException (race guard)
     │
-    └─returns─▶ UserAccountView (via UserAccountViews mapper)  [application.port.in]
+    └─returns─▶ UserAccountView (via UserAccountViews mapper)  [user.application.port.in]
                    │
                    ▼
-UserAccountPresenter.created(UserAccountView)               [adapter.in.web]
+UserAccountPresenter.created(UserAccountView)               [user.adapter.in.web]
     │  UserAccountView → UserAccountViewModel, 201 + Location
     ▼
 HTTP 201 Created  Location: /api/users/{id}  {"id", "email", "displayName", "registeredAt"}
 
-Errors: ApiExceptionHandler  DomainValidationException → 400
-                             EmailAlreadyRegisteredException → 409
-        Spring MVC           malformed JSON → 400 (use case never called)
+Errors: GlobalExceptionHandler (shared)  DomainValidationException → 400
+        UserExceptionHandler             EmailAlreadyRegisteredException → 409
+        Spring MVC                       malformed JSON → 400 (use case never called)
 ```
 
 ## Use case: Get user account — `GET /api/users/{id}`
@@ -57,18 +57,18 @@ Errors: ApiExceptionHandler  DomainValidationException → 400
 HTTP GET /api/users/{id}
     │
     ▼
-UserAccountController.getById(String id)                     [adapter.in.web]
+UserAccountController.getById(String id)                     [user.adapter.in.web]
     │
     ▼
-GetUserAccountQuery «interface»                              [application.port.in]
+GetUserAccountQuery «interface»                              [user.application.port.in]
     │  getById(String) : UserAccountView
     ▼
-GetUserAccountInteractor                                     [application.usecase]
+GetUserAccountInteractor                                     [user.application.usecase]
     │
-    ├─parses──▶ UserId.of(id)                               [domain.user]
+    ├─parses──▶ UserId.of(id)                               [user.domain]
     │              malformed ⇒ UserAccountNotFoundException
     │
-    ├─reads───▶ UserAccountRepository.findById(UserId) «interface»   [application.port.out]
+    ├─reads───▶ UserAccountRepository.findById(UserId) «interface»   [user.application.port.out]
     │                  │
     │                  ▼
     │              UserAccountPersistenceAdapter: UserAccountJpaEntity → UserAccount.restore(...)
@@ -77,12 +77,12 @@ GetUserAccountInteractor                                     [application.usecas
     └─returns─▶ UserAccountView
                    │
                    ▼
-UserAccountPresenter.found(UserAccountView)                  [adapter.in.web]
+UserAccountPresenter.found(UserAccountView)                  [user.adapter.in.web]
     │
     ▼
 HTTP 200 OK {"id", "email", "displayName", "registeredAt"}
 
-Errors: ApiExceptionHandler  UserAccountNotFoundException → 404
+Errors: UserExceptionHandler  UserAccountNotFoundException → 404
 ```
 
 Sequence diagrams (Mermaid): see `4b` in [`diagrams.md`](diagrams.md).

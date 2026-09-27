@@ -2,51 +2,61 @@
 
 Rendered natively by GitHub and IntelliJ (Mermaid plugin). Standalone sources, one diagram per file: [`mermaid/`](mermaid/).
 
-## 4a. Layer / package dependency diagram (arrows = source-code dependency)
+## 4a. Package dependency diagram, feature-first (arrows = source-code dependency)
 
 ```mermaid
 graph TD
-    subgraph MAIN["Main"]
-        app["CleanArchitectureApplication"]
-        config["config<br/>UseCaseConfig"]
-    end
-    subgraph ADAPTERS["Interface Adapters"]
-        web["adapter.in.web<br/>Controller · Presenter · ApiExceptionHandler"]
-        persistence["adapter.out.persistence<br/>PersistenceAdapter · JpaEntity"]
-    end
-    subgraph APPLICATION["Application Business Rules"]
-        usecase["application.usecase<br/>RegisterUserInteractor · GetUserAccountInteractor"]
-        portin["application.port.in<br/>RegisterUserUseCase · GetUserAccountQuery"]
-        portout["application.port.out<br/>UserAccountRepository"]
-        exception["application.exception"]
-    end
-    subgraph DOMAIN["Enterprise Business Rules"]
-        user["domain.user<br/>UserAccount · UserId · EmailAddress"]
-        domain["domain<br/>DomainValidationException"]
+    app["CleanArchitectureApplication"]
+    config["config<br/>ClockConfig"]
+
+    subgraph USER["feature: user"]
+        subgraph U_MAIN["Main"]
+            ucfg["user.config<br/>UserConfig"]
+        end
+        subgraph U_ADAPTERS["Interface Adapters"]
+            web["user.adapter.in.web<br/>Controller · Presenter · UserExceptionHandler"]
+            persistence["user.adapter.out.persistence<br/>PersistenceAdapter · JpaEntity"]
+        end
+        subgraph U_APPLICATION["Application Business Rules"]
+            usecase["user.application.usecase<br/>RegisterUserInteractor · GetUserAccountInteractor"]
+            portin["user.application.port.in<br/>RegisterUserUseCase · GetUserAccountQuery"]
+            portout["user.application.port.out<br/>UserAccountRepository"]
+            exception["user.application.exception"]
+        end
+        subgraph U_DOMAIN["Enterprise Business Rules"]
+            udomain["user.domain<br/>UserAccount · UserId · EmailAddress"]
+        end
     end
 
-    config --> usecase
-    config --> portin
-    config --> portout
+    subgraph SHARED["shared kernel"]
+        sweb["shared.adapter.in.web<br/>GlobalExceptionHandler"]
+        sdomain["shared.domain<br/>DomainValidationException"]
+    end
+
+    ucfg --> usecase
+    ucfg --> portin
+    ucfg --> portout
     web --> portin
     web --> exception
-    web --> domain
     persistence --> portout
     persistence --> exception
-    persistence --> user
+    persistence --> udomain
     usecase --> portin
     usecase --> portout
     usecase --> exception
-    usecase --> user
+    usecase --> udomain
+    usecase --> sdomain
     portin --> exception
     portout --> exception
-    portout --> user
-    user --> domain
+    portout --> udomain
+    udomain --> sdomain
+    sweb --> sdomain
 
-    style DOMAIN fill:#2d6a4f,color:#fff
-    style APPLICATION fill:#40916c,color:#fff
-    style ADAPTERS fill:#74c69d,color:#000
-    style MAIN fill:#d8f3dc,color:#000
+    style U_DOMAIN fill:#2d6a4f,color:#fff
+    style U_APPLICATION fill:#40916c,color:#fff
+    style U_ADAPTERS fill:#74c69d,color:#000
+    style U_MAIN fill:#d8f3dc,color:#000
+    style SHARED fill:#e9ecef,color:#000
 ```
 
 ## 4b-1. Sequence: Register user
@@ -116,19 +126,20 @@ erDiagram
 ```mermaid
 graph LR
     subgraph IDEAL_ABSTRACT["Stable + abstract (on / near main sequence)"]
-        portin["port.in<br/>I=0.25 A=0.50 D=0.25"]
-        portout["port.out<br/>I=0.40 A=1.00 D=0.40"]
+        portin["user.application.port.in<br/>I=0.25 A=0.50 D=0.25"]
+        portout["user.application.port.out<br/>I=0.40 A=1.00 D=0.40"]
     end
     subgraph IDEAL_CONCRETE["Unstable + concrete (on / near main sequence)"]
-        usecase["usecase<br/>I=0.80 A=0 D=0.20"]
-        web["adapter.in.web<br/>I=1 A=0 D=0"]
-        persistence["adapter.out.persistence<br/>I=1 A=0.33 D=0.33"]
-        config["config<br/>I=1 A=0 D=0"]
+        usecase["user.application.usecase<br/>I=0.83 A=0 D=0.17"]
+        web["user.adapter.in.web<br/>I=1 A=0 D=0"]
+        persistence["user.adapter.out.persistence<br/>I=1 A=0.33 D=0.33"]
+        ucfg["user.config<br/>I=1 A=0 D=0"]
+        sweb["shared.adapter.in.web<br/>I=1 A=0 D=0"]
     end
     subgraph PAIN["Stable + concrete (Zone of Pain)"]
-        domain["domain<br/>I=0 A=0 D=1.00<br/>non-volatile: OK"]
-        user["domain.user<br/>I=0.25 A=0 D=0.75<br/>non-volatile: OK"]
-        exception["application.exception<br/>I=0 A=0 D=1.00<br/>watch: shared hub"]
+        sdomain["shared.domain<br/>I=0 A=0 D=1.00<br/>non-volatile shared kernel: OK"]
+        udomain["user.domain<br/>I=0.25 A=0 D=0.75<br/>non-volatile: OK"]
+        exception["user.application.exception<br/>I=0 A=0 D=1.00<br/>feature-local: OK"]
     end
 
     style PAIN fill:#ffe8cc,color:#000
