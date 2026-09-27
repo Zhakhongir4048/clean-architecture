@@ -22,15 +22,17 @@ TESTABLE SIDE                           HUMBLE SIDE
   (@WebMvcTest)
 ```
 
-## Web errors — ApiExceptionHandler
+## Web errors — UserExceptionHandler + GlobalExceptionHandler
 
 ```
 TESTABLE SIDE                           HUMBLE SIDE
-(ApiExceptionHandler)                   (Spring MVC exception resolution)
+(exception handlers)                    (Spring MVC exception resolution)
 ──────────────────────────              ──────────────────────────
-DomainValidationException   → 400       finds the @ExceptionHandler,
-EmailAlreadyRegistered…     → 409       serialises ProblemDetail
-UserAccountNotFound…        → 404
+GlobalExceptionHandler (shared)         finds the @ExceptionHandler,
+  DomainValidationException  → 400      serialises ProblemDetail
+UserExceptionHandler (user)
+  EmailAlreadyRegistered…    → 409
+  UserAccountNotFound…       → 404
 ✓ Covered by UserAccountControllerTest  ✓ Framework code
 ```
 
