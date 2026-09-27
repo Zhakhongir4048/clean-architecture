@@ -1,0 +1,8 @@
+%% 4c. Entity relationship diagram (Flyway schema V1)
+erDiagram
+    USER_ACCOUNT {
+        uuid id PK
+        varchar(254) email UK "uk_user_account_email, stored lower-case"
+        varchar(100) display_name
+        timestamptz registered_at
+    }

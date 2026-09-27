@@ -1,0 +1,31 @@
+%% 4e. Ports and implementations (class diagram)
+classDiagram
+    direction LR
+    class RegisterUserUseCase {
+        <<interface>>
+        +register(RegisterUserCommand) UserAccountView
+    }
+    class GetUserAccountQuery {
+        <<interface>>
+        +getById(String) UserAccountView
+    }
+    class UserAccountRepository {
+        <<interface>>
+        +findById(UserId) Optional~UserAccount~
+        +existsByEmail(EmailAddress) boolean
+        +save(UserAccount) void
+    }
+    class RegisterUserInteractor
+    class GetUserAccountInteractor
+    class UserAccountPersistenceAdapter
+    class UserAccountController
+    class UserAccountPresenter
+
+    RegisterUserUseCase <|.. RegisterUserInteractor
+    GetUserAccountQuery <|.. GetUserAccountInteractor
+    UserAccountRepository <|.. UserAccountPersistenceAdapter
+    RegisterUserInteractor --> UserAccountRepository
+    GetUserAccountInteractor --> UserAccountRepository
+    UserAccountController --> RegisterUserUseCase
+    UserAccountController --> GetUserAccountQuery
+    UserAccountController --> UserAccountPresenter

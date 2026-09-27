@@ -1,0 +1,24 @@
+%% 4b-1. Sequence: Register user
+sequenceDiagram
+    participant HTTP as HTTP client
+    participant Ctrl as UserAccountController
+    participant UC as RegisterUserInteractor
+    participant Ent as UserAccount / EmailAddress
+    participant Repo as UserAccountRepository<br/>(PersistenceAdapter)
+    participant DB as PostgreSQL
+    participant Pres as UserAccountPresenter
+
+    HTTP->>Ctrl: POST /api/users {email, displayName}
+    Ctrl->>UC: register(RegisterUserCommand)
+    UC->>Ent: new EmailAddress(email)
+    Ent-->>UC: EmailAddress (or DomainValidationException → 400)
+    UC->>Repo: existsByEmail(email)
+    Repo->>DB: SELECT
+    Repo-->>UC: false (true → EmailAlreadyRegisteredException → 409)
+    UC->>Ent: UserAccount.register(email, name, now)
+    Ent-->>UC: UserAccount
+    UC->>Repo: save(account)
+    Repo->>DB: INSERT (unique violation → EmailAlreadyRegisteredException → 409)
+    UC-->>Ctrl: UserAccountView
+    Ctrl->>Pres: created(view)
+    Pres-->>HTTP: 201 Created, Location, UserAccountViewModel

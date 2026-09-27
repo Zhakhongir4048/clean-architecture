@@ -1,0 +1,18 @@
+%% 4b-2. Sequence: Get user account
+sequenceDiagram
+    participant HTTP as HTTP client
+    participant Ctrl as UserAccountController
+    participant UC as GetUserAccountInteractor
+    participant Repo as UserAccountRepository<br/>(PersistenceAdapter)
+    participant DB as PostgreSQL
+    participant Pres as UserAccountPresenter
+
+    HTTP->>Ctrl: GET /api/users/{id}
+    Ctrl->>UC: getById(id)
+    UC->>UC: UserId.of(id) (malformed → UserAccountNotFoundException → 404)
+    UC->>Repo: findById(userId)
+    Repo->>DB: SELECT
+    Repo-->>UC: Optional<UserAccount> (empty → 404)
+    UC-->>Ctrl: UserAccountView
+    Ctrl->>Pres: found(view)
+    Pres-->>HTTP: 200 OK, UserAccountViewModel

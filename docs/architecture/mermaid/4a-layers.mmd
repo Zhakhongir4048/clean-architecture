@@ -1,0 +1,43 @@
+%% 4a. Layer / package dependency diagram (arrows = source-code dependency)
+graph TD
+    subgraph MAIN["Main"]
+        app["CleanArchitectureApplication"]
+        config["config<br/>UseCaseConfig"]
+    end
+    subgraph ADAPTERS["Interface Adapters"]
+        web["adapter.in.web<br/>Controller · Presenter · ApiExceptionHandler"]
+        persistence["adapter.out.persistence<br/>PersistenceAdapter · JpaEntity"]
+    end
+    subgraph APPLICATION["Application Business Rules"]
+        usecase["application.usecase<br/>RegisterUserInteractor · GetUserAccountInteractor"]
+        portin["application.port.in<br/>RegisterUserUseCase · GetUserAccountQuery"]
+        portout["application.port.out<br/>UserAccountRepository"]
+        exception["application.exception"]
+    end
+    subgraph DOMAIN["Enterprise Business Rules"]
+        user["domain.user<br/>UserAccount · UserId · EmailAddress"]
+        domain["domain<br/>DomainValidationException"]
+    end
+
+    config --> usecase
+    config --> portin
+    config --> portout
+    web --> portin
+    web --> exception
+    web --> domain
+    persistence --> portout
+    persistence --> exception
+    persistence --> user
+    usecase --> portin
+    usecase --> portout
+    usecase --> exception
+    usecase --> user
+    portin --> exception
+    portout --> exception
+    portout --> user
+    user --> domain
+
+    style DOMAIN fill:#2d6a4f,color:#fff
+    style APPLICATION fill:#40916c,color:#fff
+    style ADAPTERS fill:#74c69d,color:#000
+    style MAIN fill:#d8f3dc,color:#000
